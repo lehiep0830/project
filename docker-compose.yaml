@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:15 # Use a specific version of the Postgres image
+    container_name: postgres_container
+    restart: always
+    environment:
+      POSTGRES_USER: admin # Custom username for the superuser
+      POSTGRES_PASSWORD: admin1234 # Password for the custom user
+      POSTGRES_DB: postgres # Optional: creates a database with this name
+    ports:
+      - "5432:5432" # Maps port 5432 on the host to 5432 in the container
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Persists the database data
+
+volumes:
+  postgres_data:
