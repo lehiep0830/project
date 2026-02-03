@@ -1,3 +1,9 @@
+// Hàm tạo id ngắn, duy nhất
+export function generateId(prefix = "id"): string {
+  // Tạo id dựa trên thời gian và số ngẫu nhiên, có thể thêm prefix
+  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 6)}`;
+}
+
 export function EnumFromObject<T extends object>(obj: T) {
   return Object.freeze(
     Object.fromEntries(
@@ -7,3 +13,4 @@ export function EnumFromObject<T extends object>(obj: T) {
 }
 
 export const camelToSnake = (str: string) => str.replace(/([A-Z])/g, '_$1').toLowerCase();
+

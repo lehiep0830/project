@@ -76,7 +76,7 @@
             </Button>
           </div>
           <div class="relative mt-4 min-h-[65vh] focus-visible:border-none focus:outline-none">
-            <basic-table-one :data="groups" :store="tableRef" />
+            <basic-table-one :data="groups" :store="tableRef" v-on:update:row-clicked="TableRowClick" />
           </div>
           <div class="absolute bottom-4 right-5">
             <pagination
@@ -159,7 +159,7 @@ const pageParams = ref<{ pageIndex: number; pageSize: number; pageCount: number 
   pageCount: 0,
 })
 
-const initgroupProfileData = async () => {
+const initGroupProfileData = async () => {
   const formStore = useFormStore()
   const nameFieldStore = tableRef.value.forkFieldStore('name')
   const typeFieldStore = tableRef.value.forkFieldStore('type')
@@ -334,7 +334,7 @@ const updatePermissionData = (
   // Initialize the Set if it's null
   if(permissionStoreRef.value[permissionCurrent.value].state.fields['Permission'].valueChange === null){
     permissionStoreRef.value[permissionCurrent.value].state.fields['Permission'].valueChange = new Set();
-  } 
+  }
   const currentSet = permissionStoreRef.value[permissionCurrent.value].state.fields['Permission'].valueChange as Set<string>;
   if(currentSet.has(row['Permission'] as string)){
     currentSet.delete(row['Permission'] as string);
@@ -354,16 +354,48 @@ const updateCreateGroupData = (value) => {
   }, {} as Record<string, TableStore>  )
 }
 
+const TableRowClick = async (row: Record<string, unknown>) => {
+  formFieldsStore.value.setDefaultValue('name', row['name'] as string)
+  formFieldsStore.value.setDefaultValue('type', row['type'] );
+  formFieldsStore.value.setDefaultValue('parent_code', row['parent_code'] );
+  const found_group = await GroupStore.find_group_by_id(row['id'] as string)
+  debugger
+  const functions = new Set(found_group['permissions'].map(
+    (perm: Record<string, unknown>) => perm['function']
+  ))
+  formFieldsStore.value.setDefaultValue('table_permission', functions)
+
+  const scope_permission : string[] = await permissionStore.get_permission_with_table(functions[0] as string)
+  let permissionValue = await permissionStore.get_permission_by_group_name(found_group['name'] as string)
+  permissionValue = permissionValue.map(
+    (perm: Record<string, unknown>) => perm.name as string
+  )
+  permissionData.value = scope_permission.map(item => {
+    return {
+      Permission : item.name,
+      selected : permissionValue ? permissionValue.includes(item.name) : false
+    }
+  })
+  switchPage.value = 'create';
+};
+
 watch(
   () => GroupStore.listGroup,
   async (newVal) => {
-    const n_groups = [...newVal]
+    let n_groups = [...newVal]
+    n_groups = n_groups.map((group) => {
+      const permissions = group.permissions.map(
+        (perm) => perm.name,
+      )
+      group.permissions = permissions;
+      return group
+    })
     if (groups.value === undefined) {
       groups.value = [...n_groups]
       tableRef.value.convertPayloadToState(n_groups[0]) as TableState
       pageParams.value.pageCount = Math.ceil(n_groups.length / pageParams.value.pageSize)
       changeTableLabel()
-      await initgroupProfileData()
+      await initGroupProfileData()
       initFormFilter()
     } else if (groups.value !== undefined) {
       groups.value = [...n_groups]

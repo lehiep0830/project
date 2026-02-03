@@ -193,7 +193,7 @@ const initPermissionProfileData = async () => {
 
 const initTablePermission = async (table?: string) => {
   await PermissionStore.get_permission_with_table(table as string)
-  if (!Object.keys(permissionBasicData.value).includes(table)) {
+  if (!Object.keys(permissionStoreRef.value).includes(table)) {
     permissionStoreRef.value[table as string] = tableStore.store()
   }
   const ListPermissionCRUD = PermissionStore.PermissionForTable
@@ -250,7 +250,6 @@ const initFormFilter = () => {
   form.setFormValue('name', '')
   form.setFormValue('function', '')
   form.setFormValue('status', '')
-  form.setFormValue('name', '')
   form.setType('view', 'select')
 
   filterFieldStore.value = form
@@ -337,16 +336,18 @@ const updateCreatePermissionData = (value) => {
   }, {} as Record<string, TableStore>  )
 }
 
-const TableRowClick = (row: Record<string, unknown>) => {
+const TableRowClick = async (row: Record<string, unknown>) => {
   formFieldsStore.value.setDefaultValue('name', row['name'] );
   formFieldsStore.value.setDefaultValue('status', row['status'] );
-  permissionBasicData.value = [
-    { Permission: 'GET' },
-    { Permission: 'CREATE' },
-    { Permission: 'UPDATE' },
-    { Permission: 'DELETE' },
-    { Permission: 'SEARCH' },
-  ]
+  formFieldsStore.value.setDefaultValue('function', row['function'] );
+  const permissionValue : string[] = await PermissionStore.get_scope_for_permission(row['name'] as string)
+  const scope_permission = await PermissionStore.get_scope_permission()
+  permissionBasicData.value = scope_permission.map(item => {
+    return {
+      Permission : item,
+      selected : permissionValue ? permissionValue.includes(item) : false
+    }
+  })
   switchPage.value = 'create';
 };
 
